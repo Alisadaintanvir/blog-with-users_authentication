@@ -60,14 +60,19 @@ def get_all_posts():
 def register():
     form = RegisterForm()
     if request.method == 'POST' and form.validate_on_submit():
+
+        if User.query.filter_by(email=request.form.get('email')).first():
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for('login'))
+
         new_user = User(
             name=form.name.data,
             email=form.email.data,
             password=generate_password_hash(form.password.data, method='pbkdf2:sha256', salt_length=8)
         )
-
         db.session.add(new_user)
         db.session.commit()
+
         login_user(new_user)
         redirect(url_for('get_all_posts'))
 
@@ -83,7 +88,7 @@ def login():
 
         user = User.query.filter_by(email=email).first()
         if not user:
-            flash("This email does not exist.Please register before log in!")
+            flash(f"This email does not exist. Please register before log in!")
             return redirect(url_for('login'))
         elif not check_password_hash(user.password, password):
             flash("Password incorrect! Please try again!")
@@ -97,6 +102,7 @@ def login():
 
 @app.route('/logout')
 def logout():
+    logout_user()
     return redirect(url_for('get_all_posts'))
 
 
